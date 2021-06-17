@@ -1,0 +1,103 @@
+<?php
+
+/**
+ * @file
+ * Contains custom_thumbnail.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+* Implements hook_install().
+*/
+
+function custom_thumbnail_install() {
+  module_set_weight('custom_thumbnail', 999);
+}
+
+/**
+ * Implements hook_help().
+ */
+function custom_thumbnail_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the custom_thumbnail module.
+    case 'help.page.custom_thumbnail':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Ability to add custom thumbnail') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave().
+ */
+function custom_thumbnail_entity_presave(Drupal\Core\Entity\EntityInterface $entity) {
+
+  /** If the user has uploaded a file for custom thumbnail, then set thumbnail to point to that file */
+  if ($entity->getEntityTypeId() == 'media' && isset($entity->field_custom_thumbnail->entity)) {
+    // Delete default thumbnail
+    deleteFile($entity, $entity->thumbnail->target_id);
+    $entity->thumbnail->target_id = $entity->field_custom_thumbnail->target_id;
+
+  /** If the custom thumbnail has not value */
+  } else if ($entity->getEntityTypeId() == 'media' && isset($entity->field_custom_thumbnail)) {
+    /** Check if it previously had value, if so, set it to generic */
+    $org_custom_thumbnail_target = $entity->original->field_custom_thumbnail->target_id;
+    if ($org_custom_thumbnail_target) {
+      $generic_thumbnail = getGenericThumbnail();
+      if ($generic_thumbnail) {
+        $entity->thumbnail->target_id = $generic_thumbnail;
+      }
+    }
+
+  }
+}
+
+/**
+  * @return int|string|null
+  * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+  * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+*/
+function getGenericThumbnail() {
+  $uri = \Drupal::config('media.settings')->get('icon_base_uri');
+  $files = \Drupal::entityTypeManager()->getStorage('file')->loadByProperties(['uri' => $uri . '/' . "generic.png"]);
+  return !empty($files) ? reset($files)->id() : NULL;
+}
+
+/**
+  * Delete a media thumbnail.
+  *
+  * @param \Drupal\media\MediaInterface $media
+  *   The media object.
+  * @param str fileID
+  *   Id of the file to be deleted.  
+*/
+function deleteFile($media, $fileID) {
+  // Don't delete files used in other places.   
+  $thumbnailFile = \Drupal::entityTypeManager()->getStorage('file')->load($fileID);
+
+  $fileUsage = \Drupal::service('file.usage');
+  $usage = $fileUsage->listUsage($thumbnailFile);
+  $count = 0;
+  array_walk_recursive($usage, static function () use (&$count) {
+    $count++;
+  });
+  if ($count > 1) {
+    return;
+  }
+
+  // Don't delete generic default thumbnails.
+  if ($thumbnailFile->getCreatedTime() < $media->getCreatedTime()) {
+    return;
+  }
+
+  // Delete the thumbnail file.
+  try {
+    $thumbnailFile->delete();
+  }
+  catch (EntityStorageException $e) {
+  }
+}

@@ -1,0 +1,8 @@
+name: 'Custom Thumbnail'
+type: module
+description: 'Ability to add custom thumbnail'
+core: 8.x
+core_version_requirement: ^8 || ^9
+package: 'islandora_lite'
+dependencies:
+  - media

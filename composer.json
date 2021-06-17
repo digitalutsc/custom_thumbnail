@@ -1,0 +1,13 @@
+{
+    "name": "custom_thumbnail",
+    "type": "drupal-module",
+    "description": "Custom Thumbnail",
+    "keywords": [
+    ],
+    "homepage": "https://www.drupal.org/project/custom_thumbnail",
+    "minimum-stability": "dev",
+    "support": {
+        "issues": "https://www.drupal.org/project/issues/custom_thumbnail",
+        "source": "http://cgit.drupalcode.org/custom_thumbnail",
+    },
+}
