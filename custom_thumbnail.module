@@ -42,11 +42,10 @@ function custom_thumbnail_entity_presave(Drupal\Core\Entity\EntityInterface $ent
     deleteFile($entity, $entity->thumbnail->target_id);
     $entity->thumbnail->target_id = $entity->field_custom_thumbnail->target_id;
 
-  /** If the custom thumbnail has not value */
+  /** If the custom thumbnail has no value */
   } else if ($entity->getEntityTypeId() == 'media' && isset($entity->field_custom_thumbnail)) {
     /** Check if it previously had value, if so, set it to generic */
-    $org_custom_thumbnail_target = $entity->original->field_custom_thumbnail->target_id;
-    if ($org_custom_thumbnail_target) {
+    if (isset($entity->original) && isset($entity->original->field_custom_thumbnail->target_id)) {
       $generic_thumbnail = getGenericThumbnail();
       if ($generic_thumbnail) {
         $entity->thumbnail->target_id = $generic_thumbnail;
